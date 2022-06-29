@@ -15,7 +15,7 @@ macro_rules! error {
 trait MemberMap<'a> {
     fn add(&mut self, name: &'a str, ty: Type<'a>) -> Result<(), TokenStream>;
 
-    fn get(&self, name: &'a str, ty: Type<'a>) -> Result<&Type<'a>, TokenStream>;
+    fn get(&self, name: &'a str) -> Result<&Type<'a>, TokenStream>;
 
     fn iter(&self) -> Box<dyn Iterator<Item = (&'a str, &Type<'a>)> + '_>;
 }
@@ -30,7 +30,7 @@ impl<'a> MemberMap<'a> for Vec<(&'a str, Type<'a>)> {
         }
     }
 
-    fn get(&self, name: &'a str, ty: Type<'a>) -> Result<&Type<'a>, TokenStream> {
+    fn get(&self, name: &'a str) -> Result<&Type<'a>, TokenStream> {
         if let Some((_, ty)) = Vec::iter(self).find(|(n, _)| *n == name) {
             Ok(ty)
         } else {
@@ -215,10 +215,10 @@ fn generate_rust<'a>(
                         }
 
                         #[inline(always)]
-                        pub fn to_raw(&self) -> #raw {
+                        pub fn to_raw(&self, slice: &mut [u8], offset: usize) {
                             <#raw>::new(match self {
                                 #to_raw
-                            }.try_into().unwrap())
+                            }.try_into().unwrap()).to_raw(slice, offset)
                         }
                     }
                 });
@@ -249,9 +249,8 @@ fn generate_rust<'a>(
                         }
                     });
                     methods.extend(quote! {
-                        #[inline(always)]
                         pub fn #set_f(&mut self, value: #ty) {
-                            todo!()
+                            value.to_raw(&mut self.0, #offset)
                         }
                     });
                     offset += s as usize;
@@ -266,6 +265,15 @@ fn generate_rust<'a>(
                         pub fn from_raw(slice: &[u8], offset: usize) -> Self {
                             if offset % 8 == 0 {
                                 Self(slice[offset / 8..][..#size].try_into().unwrap())
+                            } else {
+                                todo!("non-byte-aligned offset")
+                            }
+                        }
+
+                        #[inline(always)]
+                        pub fn to_raw(&self, slice: &mut [u8], offset: usize) {
+                            if offset % 8 == 0 {
+                                slice[offset / 8..][..#size].copy_from_slice(&self.0)
                             } else {
                                 todo!("non-byte-aligned offset")
                             }
@@ -296,7 +304,7 @@ fn generate_rust<'a>(
 
                         #[inline(always)]
                         pub fn #set_f(&mut self, value: #ty) {
-                            todo!()
+                            value.to_raw(&mut self.0, 0)
                         }
                     });
                 }
@@ -316,8 +324,12 @@ fn generate_rust<'a>(
                         }
 
                         #[inline(always)]
-                        pub fn to_raw(&self) {
-                            todo!()
+                        pub fn to_raw(&self, slice: &mut [u8], offset: usize) {
+                            if offset % 8 == 0 {
+                                slice[offset / 8..][..#size].copy_from_slice(&self.0)
+                            } else {
+                                todo!("non-byte-aligned offset")
+                            }
                         }
                     }
 
