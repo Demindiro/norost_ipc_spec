@@ -46,7 +46,7 @@ impl<'a> MemberMap<'a> for Vec<(&'a str, Type<'a>)> {
 type TypeMap<'a, M> = BTreeMap<&'a str, UserType<'a, M>>;
 
 #[proc_macro]
-pub fn make_answer(item: TokenStream) -> TokenStream {
+pub fn compile(item: TokenStream) -> TokenStream {
     let mut it = item.expand_expr().unwrap().into_iter();
     let s = it.next().unwrap();
     assert!(it.next().is_none());

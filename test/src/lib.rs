@@ -1,4 +1,4 @@
-norost_ipc_spec::make_answer!(include_str!("../spec/stream_table.ipc"));
+norost_ipc_spec::compile!(include_str!("../spec/stream_table.ipc"));
 
 #[cfg(test)]
 mod test {
