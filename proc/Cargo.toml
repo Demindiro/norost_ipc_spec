@@ -1,0 +1,11 @@
+[package]
+name = "norost_ipc_spec_proc"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+litrs = "0.2"
+quote = "1.0"
